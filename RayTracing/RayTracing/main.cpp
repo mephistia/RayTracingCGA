@@ -1,8 +1,18 @@
+/*
+-> Completar o tutorial Ray Tracing in a Weekend
+-> Adaptar e separar conforme as classes do enunciado
+-> Adicionar Ray Casting simples com modelo Phong (sem Ray Tracing)
+-> Ler arquivo de config
+*/
+
+
 #include <iostream>
 #include <fstream>
 #include "HitableList.h"
 #include "Sphere.h"
+#include "Camera.h"
 #include <cfloat>
+#include <time.h>
 
 // lerp cores
 glm::vec3 color(const Ray &r, Hitable *world) {
@@ -27,10 +37,14 @@ glm::vec3 color(const Ray &r, Hitable *world) {
 }
 
 int main() {
+	srand(time(NULL));
 
 	// tamanho 2:1
 	int nx = 600;
 	int ny = 300;
+
+	// qtd anti-aliasing
+	int ns = 10;
 
 	// criar arquivo
 	std::ofstream img ("testImg.ppm");
@@ -39,12 +53,6 @@ int main() {
 	if (img.is_open()) {
 		img << "P3\n" << nx << " " << ny << "\n255\n";
 
-		// vetores
-		glm::vec3 llc(-2.0f, -1.0f, -1.0f);
-		glm::vec3 horizontal(4.0f, 0.0f, 0.0f);
-		glm::vec3 vertical(0.0f, 2.0f, 0.0f);
-		glm::vec3 origin(0.0f, 0.0f, 0.0f);
-
 		// criar objetos "atingíveis"
 		Hitable *list[2];
 		list[0] = new Sphere(glm::vec3(0.0f, 0.0f, -1.0f), 0.5f);
@@ -52,18 +60,25 @@ int main() {
 
 		// colocar os objetos na lista do mundo
 		Hitable *world = new HitableList(list, 2);
+
+		Camera cam;
 		
 		for (int j = ny - 1; j >= 0; j--) {
 			for (int i = 0; i < nx; i++) {
 		
-				float u = float(i) / float(nx);
-				float v = float(j) / float(ny);
-				
-				// raio sai da origem e vai na direção:
-				Ray r(origin, llc + u * horizontal + v * vertical);
+				glm::vec3 col(0.0f, 0.0f, 0.0f);
 
-				glm::vec3 p = r.point_at_parameter(2.0f);
-				glm::vec3 col = color(r, world);
+				// anti-aliasing
+				for (int s = 0; s < ns; s++) {
+					float u = float(i + (rand() / (RAND_MAX + 1.0f))) / float(nx);
+					float v = float(j + (rand() / (RAND_MAX + 1.0f))) / float(ny);
+					
+					Ray r = cam.getRay(u, v);
+					glm::vec3 p = r.point_at_parameter(2.0);
+					col += color(r, world);
+				}
+				
+				col /= float(ns);
 				
 				int ir = int(255.99 * col.r);
 				int ig = int(255.99 * col.g);
@@ -72,6 +87,8 @@ int main() {
 				img << ir << " " << ig << " " << ib << "\n";
 			}
 		}
+
+		img.close();
 	}
 
 	return 0;
