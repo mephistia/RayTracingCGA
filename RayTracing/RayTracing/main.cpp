@@ -3,29 +3,33 @@
 #include "Ray.h"
 
 // verificar se o raio atinge esfera
-bool hitSphere(const glm::vec3 &center, float radius, const Ray &r) {
+float hitSphere(const glm::vec3 &center, float radius, const Ray &r) {
 	glm::vec3 oc = r.origin() - center;
 	float a = dot(r.direction(), r.direction());
 	float b = 2.0f * dot(oc, r.direction());
 	float c = dot(oc, oc) - radius * radius;
 	float discriminant = b * b - 4 * a * c;
-	return (discriminant > 0);
+	if (discriminant < 0) {
+		return -1.0f;
+	}
+	else {
+		return (-b - sqrt(discriminant)) / (2.0f * a);
+	}
 }
 
 // lerp branco e azul (fundo)
 glm::vec3 color(const Ray &r) {
 
-	// se atingir uma esfera nesta posição
-	if (hitSphere(glm::vec3(0.0f, 0.0f, -1.0f), 0.5f, r)) {
-		// colore
-		return glm::vec3(1.0f, 0.0f, 0.0f);
-	}
+	float t = hitSphere(glm::vec3(0.0f, 0.0f, -1.0f), 0.5f, r);
 
-	glm::vec3 unit_direction;
-	glm::vec3 unit_vector(r.direction());
-	unit_direction = unit_vector;
+	// mostrar normal da esfera
+	if (t > 0) {
+		glm::vec3 N = glm::normalize(r.point_at_parameter(t) - glm::vec3(0.0f, 0.0f, -1.0f));
+		return 0.5f * glm::vec3(N.x + 1.0f, N.y + 1.0f, N.z + 1.0f);
+	}
 	
-	float t = 0.5f * (unit_direction.y + 1.0f);
+	glm::vec3 unit_direction = glm::normalize(r.direction());
+	t = 0.5f * (unit_direction.y + 1.0f);
 	// cores min e max (alaranjado e azul escuro)
 	return (1.0f - t) * glm::vec3(0.6f, 0.4f, 0.3f) + t * glm::vec3(0.1f, 0.0f, 0.3f);
 }
