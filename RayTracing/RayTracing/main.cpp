@@ -13,6 +13,16 @@
 #include "Camera.h"
 #include <cfloat>
 #include <time.h>
+#include "glm\gtx\norm.hpp"
+
+// ponto random (Ray Tracing)
+glm::vec3 randomInUnitSphere() {
+	glm::vec3 p;
+	do {
+		p = 2.0f * glm::vec3((rand() / (RAND_MAX + 1.0f)), (rand() / (RAND_MAX + 1.0f)), (rand() / (RAND_MAX + 1.0f))) - glm::vec3(1.0f, 1.0f, 1.0f);
+	} while (glm::length2(p) >= 1.0f);
+	return p;
+}
 
 // lerp cores
 glm::vec3 color(const Ray &r, Hitable *world) {
@@ -20,9 +30,15 @@ glm::vec3 color(const Ray &r, Hitable *world) {
 	// guardar onde bateu
 	hit_record rec;
 
-	// verificar se bateu
-	if (world->hit(r, 0.0f, FLT_MAX, rec)) {
+	// verificar se bateu (Ray Casting)
+	/*if (world->hit(r, 0.0f, FLT_MAX, rec)) {
 		return 0.5f * glm::vec3(rec.normal.x + 1.0f, rec.normal.y + 1.0f, rec.normal.z + 1.0f);
+	}*/
+
+	// verificar se bateu (Ray Tracing)
+	if (world->hit(r, 0.01f, FLT_MAX, rec)) {
+		glm::vec3 target = rec.p + rec.normal + randomInUnitSphere();
+		return 0.5f * color(Ray(rec.p, target - rec.p), world);
 	}
 
 	// ou desenhar o fundo
@@ -30,7 +46,7 @@ glm::vec3 color(const Ray &r, Hitable *world) {
 		glm::vec3 unit_direction = glm::normalize(r.direction());
 		float t = 0.5f * (unit_direction.y + 1.0f);
 		// cores min e max (alaranjado e azul escuro)
-		return (1.0f - t) * glm::vec3(0.6f, 0.4f, 0.3f) + t * glm::vec3(0.1f, 0.0f, 0.3f);
+		return (1.0f - t) * glm::vec3(1.0f, 1.0f, 1.0f) + t * glm::vec3(0.5f, 0.7f, 1.0f);
 
 	}
 	
@@ -74,12 +90,15 @@ int main() {
 					float v = float(j + (rand() / (RAND_MAX + 1.0f))) / float(ny);
 					
 					Ray r = cam.getRay(u, v);
-					glm::vec3 p = r.point_at_parameter(2.0);
+					glm::vec3 p = r.point_at_parameter(2.0f);
 					col += color(r, world);
 				}
 				
 				col /= float(ns);
 				
+				// pegar raiz p/ ficar mais claro
+				col = glm::vec3(sqrt(col.r), sqrt(col.g), sqrt(col.b));
+
 				int ir = int(255.99 * col.r);
 				int ig = int(255.99 * col.g);
 				int ib = int(255.99 * col.b);
