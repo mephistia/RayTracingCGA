@@ -5,24 +5,17 @@
 -> Ler arquivo de config
 */
 
-
 #include <iostream>
+#include <time.h>
 #include <fstream>
 #include "HitableList.h"
 #include "Sphere.h"
 #include "Camera.h"
-#include <cfloat>
-#include <time.h>
-#include "glm\gtx\norm.hpp"
+#include <float.h>
+#include "RandomPoint.h"
+
 
 // ponto random (Ray Tracing)
-glm::vec3 randomInUnitSphere() {
-	glm::vec3 p;
-	do {
-		p = 2.0f * glm::vec3((rand() / (RAND_MAX + 1.0f)), (rand() / (RAND_MAX + 1.0f)), (rand() / (RAND_MAX + 1.0f))) - glm::vec3(1.0f, 1.0f, 1.0f);
-	} while (glm::length2(p) >= 1.0f);
-	return p;
-}
 
 // lerp cores
 glm::vec3 color(const Ray &r, Hitable *world) {
@@ -30,13 +23,19 @@ glm::vec3 color(const Ray &r, Hitable *world) {
 	// guardar onde bateu
 	hit_record rec;
 
-	// verificar se bateu (Ray Casting)
+	// verificar se bateu 
 	/*if (world->hit(r, 0.0f, FLT_MAX, rec)) {
 		return 0.5f * glm::vec3(rec.normal.x + 1.0f, rec.normal.y + 1.0f, rec.normal.z + 1.0f);
 	}*/
 
-	// verificar se bateu (Ray Tracing)
+	// verificar se bateu
 	if (world->hit(r, 0.01f, FLT_MAX, rec)) {
+
+		Ray scattered;
+		glm::vec3 attenuation;
+
+
+
 		glm::vec3 target = rec.p + rec.normal + randomInUnitSphere();
 		return 0.5f * color(Ray(rec.p, target - rec.p), world);
 	}
