@@ -27,6 +27,11 @@ inline float random_float() {
     return rand_generator();
 }
 
+inline float random_float(float min, float max) {
+    // Returns a random real in min,max.
+    return min + (max - min) * random_float();
+}
+
 //glm::vec3 randomInUnitSphere() {
 //	glm::vec3 p;
 //	do {
@@ -39,10 +44,10 @@ inline float degrees_to_radians(double degrees) {
 	return degrees * pi / 180;
 }
 
-inline float ffmin(double a, double b) { return a <= b ? a : b; }
-inline float ffmax(double a, double b) { return a >= b ? a : b; }
+inline float ffmin(float a, float b) { return a <= b ? a : b; }
+inline float ffmax(float a, float b) { return a >= b ? a : b; }
 
-inline double clamp(double x, double min, double max) {
+inline float clamp(float x, float min, float max) {
     if (x < min) return min;
     if (x > max) return max;
     return x;
@@ -50,12 +55,52 @@ inline double clamp(double x, double min, double max) {
 
 inline glm::vec3 scale_color(glm::vec3 vector, int samples) {
     float scale = 1.f / samples;
-    float r = scale * vector.x;
-    float g = scale * vector.y;
-    float b = scale * vector.z;
+    float r = sqrt(scale * vector.x);
+    float g = sqrt(scale * vector.y);
+    float b = sqrt(scale * vector.z);
 
     return glm::vec3(r, g, b);
 
+}
+
+inline static glm::vec3 randomVec() {
+    return glm::vec3(random_float(), random_float(), random_float());
+}
+
+inline static glm::vec3 randomVec(float min, float max) {
+    return glm::vec3(random_float(min, max), random_float(min, max), random_float(min, max));
+}
+
+glm::vec3 random_in_unit_sphere() {
+    while (true) {
+        glm::vec3 p = randomVec(-1, 1);
+        if (glm::length2(p) >= 1) continue;
+        return p;
+    }
+}
+
+glm::vec3 random_unit_vector() {
+    auto a = random_float(0, 2 * pi);
+    auto z = random_float(-1, 1);
+    auto r = sqrt(1 - z * z);
+    return glm::vec3(r * cos(a), r * sin(a), z);
+}
+
+glm::vec3 reflect(const glm::vec3& v, const glm::vec3& n) {
+    return v - 2 * dot(v, n) * n;
+}
+
+glm::vec3 refract(const glm::vec3& uv, const glm::vec3& n, float etai_over_etat) {
+    auto cos_theta = dot(-uv, n);
+    glm::vec3 r_out_parallel = etai_over_etat * (uv + cos_theta * n);
+    glm::vec3 r_out_perp = -sqrt(1.0f - glm::length2(r_out_parallel)) * n;
+    return r_out_parallel + r_out_perp;
+}
+
+float schlick(float cosine, float ref_idx) {
+    auto r0 = (1 - ref_idx) / (1 + ref_idx);
+    r0 = r0 * r0;
+    return r0 + (1 - r0) * pow((1 - cosine), 5);
 }
 
 #endif

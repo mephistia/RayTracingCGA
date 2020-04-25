@@ -6,15 +6,30 @@
 // definição da câmera
 class Camera {
 public:
-    Camera() {
-        lower_left_corner = glm::vec3(-2.f, -1.f, -1.f);
-        horizontal = glm::vec3(4.f, 0.f, 0.f);
-        vertical = glm::vec3(0.f, 2.f, 0.f);
-        origin = glm::vec3(0.f, 0.f, 0.f);
+    Camera(
+        glm::vec3 lookfrom, glm::vec3 lookat, glm::vec3 vup,
+        double vfov, // top to bottom, in degrees
+        double aspect) {
+        origin = lookfrom;
+        glm::vec3 u, v, w;
+
+        float theta = degrees_to_radians(vfov);
+        float half_height = tan(theta / 2);
+        float half_width = aspect * half_height;
+
+        w = glm::normalize(lookfrom - lookat);
+        u = glm::normalize(cross(vup, w));
+        v = cross(w, u);
+
+        lower_left_corner = origin - half_width * u - half_height * v - w;
+
+        horizontal = 2 * half_width * u;
+        vertical = 2 * half_height * v;
     }
 
-    Ray get_ray(float u, float v) {
-        return Ray(origin, lower_left_corner + u * horizontal + v * vertical - origin);
+    
+    Ray get_ray(float s, float t) {
+        return Ray(origin, lower_left_corner + s * horizontal + t * vertical - origin);
     }
 
 public:

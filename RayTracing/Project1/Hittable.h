@@ -2,11 +2,14 @@
 #define HITTABLE_H
 
 #include "Ray.h"
+class Material;
+
 
 // struct que guarda onde bateu
 struct hit_record {
     glm::vec3 p;
     glm::vec3 normal;
+    shared_ptr<Material> mat_ptr;
     float t;
     bool front_face;
 

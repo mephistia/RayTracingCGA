@@ -7,13 +7,16 @@
 class Sphere : public Hittable {
 public:
     Sphere() {}
-    Sphere(glm::vec3 cen, float r) : center(cen), radius(r) {};
+    Sphere(glm::vec3 cen, float r, shared_ptr<Material> m)
+        : center(cen), radius(r), mat_ptr(m)
+    {};
 
     virtual bool hit(const Ray& r, float tmin, float tmax, hit_record& rec) const;
 
 public:
     glm::vec3 center;
     float radius;
+    shared_ptr<Material> mat_ptr;
 };
 
 // verificar se bateu em uma esfera (direto, borda ou fora)
@@ -33,6 +36,7 @@ bool Sphere::hit(const Ray& r, float t_min, float t_max, hit_record& rec) const 
             rec.p = r.at(rec.t);
             glm::vec3 outward_normal = (rec.p - center) / radius;
             rec.set_face_normal(r, outward_normal);
+            rec.mat_ptr = mat_ptr;
             return true;
         }
         temp = (-half_b + root) / a;
@@ -41,6 +45,7 @@ bool Sphere::hit(const Ray& r, float t_min, float t_max, hit_record& rec) const 
             rec.p = r.at(rec.t);
             glm::vec3 outward_normal = (rec.p - center) / radius;
             rec.set_face_normal(r, outward_normal);
+            rec.mat_ptr = mat_ptr;
             return true;
         }
     }

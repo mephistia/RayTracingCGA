@@ -3,15 +3,25 @@
 #include "Sphere.h"
 #include "HittableList.h"
 #include "Camera.h"
+#include "Metal.h"
+#include "Lambertian.h"
+#include "Dielectric.h"
 
 
 // definir cor do pixel
-glm::vec3 ray_color(const Ray& r, const Hittable& world) {
+glm::vec3 ray_color(const Ray& r, const Hittable& world, int depth) {
 
     hit_record rec;
 
-    if (world.hit(r, 0, infinity, rec)) {
-        return 0.5f * (rec.normal + glm::vec3(1.f, 1.f, 1.f));
+    if (depth <= 0)
+        return glm::vec3(0.f, 0.f, 0.f);
+
+    if (world.hit(r, 0.001f, infinity, rec)) {
+        Ray scattered;
+        glm::vec3 attenuation;
+        if (rec.mat_ptr->scatter(r, rec, attenuation, scattered))
+            return attenuation * ray_color(scattered, world, depth - 1);
+        return glm::vec3(0, 0, 0);
     }
 
     glm::vec3 unit_direction = glm::normalize(r.direction());
@@ -23,6 +33,10 @@ int main() {
     const int image_width = 400;
     const int image_height = 200;
     const int samples_per_pixel = 100;
+    const int max_depth = 50;
+    const float aspect_ratio = float(image_width) / image_height;
+
+
 
 
     // criar arquivo
@@ -34,16 +48,24 @@ int main() {
         // padronização PPM
         img << "P3\n" << image_width << ' ' << image_height << "\n255\n";
 
-        glm::vec3 lower_left_corner(-2.f, -1.f, -1.f);
-        glm::vec3 horizontal(4.f, 0.f, 0.f);
-        glm::vec3 vertical(0.f, 2.f, 0.f);
-        glm::vec3 origin(0.f, 0.f, 0.f);
-
         HittableList world;
-        world.add(make_shared<Sphere>(glm::vec3(0.f, 0.f, -1.f), 0.5f));
-        world.add(make_shared<Sphere>(glm::vec3(0.f, -100.5f, -1.f), 100.f));
 
-        Camera cam;
+        glm::vec3 lookfrom(13.f, 2.f, 3.f);
+        glm::vec3 lookat(0.f, 0.f, 0.f);
+        glm::vec3 vup(0.f, 1.f, 0.f);
+
+
+        world.add(make_shared<Sphere>(
+            glm::vec3(0.f, 0.f, -1.f), 0.5f, make_shared<Lambertian>(glm::vec3(.7f, .3f, .3f))));
+
+        world.add(make_shared<Sphere>(
+            glm::vec3(0.f, -100.5f, -1.f), 100.f, make_shared<Lambertian>(glm::vec3(.8f, .8f, 0.f))));
+
+        world.add(make_shared<Sphere>(glm::vec3(1.f, 0.f, -1.f), 0.5f, make_shared<Metal>(glm::vec3(0.8f, 0.6f, 0.2f),0.4)));
+        world.add(make_shared<Sphere>(glm::vec3(-1.f, 0.f, -1.f), 0.5f, make_shared<Dielectric>(1.5f)));
+        world.add(make_shared<Sphere>(glm::vec3(-1.f, 0.f, -1.f), -0.45f, make_shared<Dielectric>(1.5f)));
+
+        Camera cam(glm::vec3(-2.f,2.f,1.f), glm::vec3(0.f,0.f,-1.f),vup, 30, aspect_ratio);
 
         for (int j = image_height - 1; j >= 0; --j) {
             std::cerr << "\rScanlines remaining: " << j << ' ' << std::flush;
@@ -59,7 +81,7 @@ int main() {
                     auto v = (j + random_float()) / image_height;
                     // cores
                     Ray ray = cam.get_ray(u, v);
-                    color += ray_color(ray, world);
+                    color += ray_color(ray, world, max_depth);
                 }
 
 
