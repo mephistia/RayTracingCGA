@@ -103,4 +103,12 @@ float schlick(float cosine, float ref_idx) {
     return r0 + (1 - r0) * pow((1 - cosine), 5);
 }
 
+glm::vec3 random_in_unit_disk() {
+    while (true) {
+        auto p = glm::vec3(random_float(-1.f, 1.f), random_float(-1.f, 1.f), 0);
+        if (glm::length2(p) >= 1) continue;
+        return p;
+    }
+}
+
 #endif

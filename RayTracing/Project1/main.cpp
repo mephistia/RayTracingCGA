@@ -8,6 +8,52 @@
 #include "Dielectric.h"
 
 
+// esferas aleatórias
+HittableList randomScene() {
+    HittableList world;
+
+    world.add(make_shared<Sphere>(
+        glm::vec3(0.f, -1000.f, 0.f), 1000.f, make_shared<Lambertian>(glm::vec3(0.5f, 0.5f, 0.5f))));
+
+    int i = 1;
+    for (int a = -11; a < 11; a++) {
+        for (int b = -11; b < 11; b++) {
+            auto choose_mat = random_float();
+            glm::vec3 center(a + 0.9f * random_float(), 0.2f, b + 0.9f * random_float());
+            if ((center - glm::vec3(4.f, 0.2f, 0.f)).length() > 0.9f) {
+                if (choose_mat < 0.8f) {
+                    // diffuse
+                    auto albedo = randomVec() * randomVec();
+                    world.add(
+                        make_shared<Sphere>(center, 0.2f, make_shared<Lambertian>(albedo)));
+                }
+                else if (choose_mat < 0.95f) {
+                    // metal
+                    auto albedo = randomVec(.5f,1.f);
+                    auto fuzz = random_float(0.f, .5f);
+                    world.add(
+                        make_shared<Sphere>(center, 0.2f, make_shared<Metal>(albedo, fuzz)));
+                }
+                else {
+                    // glass
+                    world.add(make_shared<Sphere>(center, 0.2f, make_shared<Dielectric>(1.5f)));
+                }
+            }
+        }
+    }
+
+    world.add(make_shared<Sphere>(glm::vec3(0.f, 1.f, 0.f), 1.0f, make_shared<Dielectric>(1.5f)));
+
+    world.add(
+        make_shared<Sphere>(glm::vec3(-4.f, 1.f, 0.f), 1.0f, make_shared<Lambertian>(glm::vec3(0.4f, 0.2f, 0.1f))));
+
+    world.add(
+        make_shared<Sphere>(glm::vec3(4.f, 1.f, 0.f), 1.0f, make_shared<Metal>(glm::vec3(0.7f, 0.6f, 0.5f), 0.0f)));
+
+    return world;
+}
+
+
 // definir cor do pixel
 glm::vec3 ray_color(const Ray& r, const Hittable& world, int depth) {
 
@@ -48,14 +94,16 @@ int main() {
         // padronização PPM
         img << "P3\n" << image_width << ' ' << image_height << "\n255\n";
 
-        HittableList world;
+        HittableList world = randomScene();
 
         glm::vec3 lookfrom(13.f, 2.f, 3.f);
         glm::vec3 lookat(0.f, 0.f, 0.f);
         glm::vec3 vup(0.f, 1.f, 0.f);
+        float dist_to_focus = 10.f;
+        float aperture = 0.1f;
 
 
-        world.add(make_shared<Sphere>(
+        /*world.add(make_shared<Sphere>(
             glm::vec3(0.f, 0.f, -1.f), 0.5f, make_shared<Lambertian>(glm::vec3(.7f, .3f, .3f))));
 
         world.add(make_shared<Sphere>(
@@ -63,11 +111,13 @@ int main() {
 
         world.add(make_shared<Sphere>(glm::vec3(1.f, 0.f, -1.f), 0.5f, make_shared<Metal>(glm::vec3(0.8f, 0.6f, 0.2f),0.4)));
         world.add(make_shared<Sphere>(glm::vec3(-1.f, 0.f, -1.f), 0.5f, make_shared<Dielectric>(1.5f)));
-        world.add(make_shared<Sphere>(glm::vec3(-1.f, 0.f, -1.f), -0.45f, make_shared<Dielectric>(1.5f)));
+        world.add(make_shared<Sphere>(glm::vec3(-1.f, 0.f, -1.f), -0.45f, make_shared<Dielectric>(1.5f)));*/
 
-        Camera cam(glm::vec3(-2.f,2.f,1.f), glm::vec3(0.f,0.f,-1.f),vup, 30, aspect_ratio);
+
+        Camera cam(lookfrom,lookat,vup, 20, aspect_ratio,aperture,dist_to_focus);
 
         for (int j = image_height - 1; j >= 0; --j) {
+            
             std::cerr << "\rScanlines remaining: " << j << ' ' << std::flush;
 
 
