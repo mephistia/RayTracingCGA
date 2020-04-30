@@ -142,8 +142,35 @@ public:
 					} while (!((center - glm::vec3(2.0, 0.2, 0)).length() > 1));
 
 					albedo = randomVec() * randomVec();
-					world.add(
-						make_shared<Sphere>(center, 0.2, make_shared<Lambertian>(albedo)));
+
+					
+					// Adiciona apenas Lambertian se for Ray Casting
+					if (!rayTracing) {
+						world.add(
+							make_shared<Sphere>(center, 0.2, make_shared<Lambertian>(albedo)));
+					}
+
+					// Se não, sorteia material
+					else {
+						std::vector<int> randomMat = { 0,1,2 };
+						int mat = *Choose(randomMat.begin(), randomMat.end());
+
+						if (mat == 0) {
+							world.add(
+								make_shared<Sphere>(center, 0.2, make_shared<Lambertian>(albedo)));
+						}
+
+						else if (mat == 1) {
+							fuzz = random_float(0, .5f);
+							world.add(make_shared<Sphere>(center, 0.2, make_shared<Metal>(albedo, fuzz)));
+						}
+
+						else {
+							world.add(make_shared<Sphere>(center, 0.2, make_shared<Dielectric>(1.5)));
+						}
+					}
+					
+					
 					std::cerr << "Random Sphere " << i << " done!\n";
 
 				}
@@ -154,6 +181,20 @@ public:
 
 		// Depois de ler o arquivo, world pode ser chamado
 		std::cerr << "Done reading file.\n";
+	}
+
+	template<typename Iter, typename RandomGenerator>
+	Iter Choose(Iter start, Iter end, RandomGenerator& g) {
+		std::uniform_int_distribution<> dis(0, std::distance(start, end) - 1);
+		std::advance(start, dis(g));
+		return start;
+	}
+
+	template<typename Iter>
+	Iter Choose(Iter start, Iter end) {
+		static std::random_device rd;
+		static std::mt19937 gen(rd());
+		return Choose(start, end, gen);
 	}
 
 	HittableList getWorld(){
