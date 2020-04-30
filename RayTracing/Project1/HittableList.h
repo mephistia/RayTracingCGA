@@ -3,8 +3,6 @@
 
 #include "Hittable.h"
 
-
-
 // Lista de objetos atingidos
 class HittableList : public Hittable {
 public:

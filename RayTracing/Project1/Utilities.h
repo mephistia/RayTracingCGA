@@ -3,11 +3,14 @@
 
 // Headers comuns
 #include "glm/glm.hpp"
-#include "glm\gtx\norm.hpp"
+#include "glm/gtx/norm.hpp"
 #include <memory>
 #include <vector>
 #include <functional>
 #include <random>
+#include <string>
+#include <iostream>
+#include <fstream>
 
 
 using std::shared_ptr;
@@ -21,14 +24,14 @@ const float pi = 3.1415926535897932385;
 // Utilidades
 
 inline float random_float() {
+    std::random_device rd;
     static std::uniform_real_distribution<float> distribution(0.0, 1.0);
-    static std::mt19937 generator;
+    static std::mt19937 generator(rd());
     static std::function<float()> rand_generator = std::bind(distribution, generator);
     return rand_generator();
 }
 
 inline float random_float(float min, float max) {
-    // Returns a random real in min,max.
     return min + (max - min) * random_float();
 }
 

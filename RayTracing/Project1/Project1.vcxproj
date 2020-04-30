@@ -151,6 +151,7 @@
     <ClInclude Include="Material.h" />
     <ClInclude Include="Metal.h" />
     <ClInclude Include="Ray.h" />
+    <ClInclude Include="ReadInput.h" />
     <ClInclude Include="Sphere.h" />
     <ClInclude Include="Utilities.h" />
   </ItemGroup>
