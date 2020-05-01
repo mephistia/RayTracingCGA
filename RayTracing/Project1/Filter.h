@@ -8,63 +8,137 @@ public:
 	Filter() {}
 	~Filter() {}
 
-	void applyBlur(std::string fileToLoad) {
-
-		readImg(fileToLoad);
-
+	void applyEmboss() {
 		// Cria o filtro
-		const int filterWidth = 3, filterHeight = 3;
-
-		float filter[filterHeight][filterWidth] =
+		const int fh = 3, fw = 3;
+		float filter[fh][fw] = 
 		{
-			{0, 0, 0},
-			{0, 1, 0},
-			{0, 0, 0}
+			{-1, -1,  0},
+			{-1,  0,  1},
+			{ 0,  1,  1}
 		};
 
-		float factor = 1.0;
-		float bias = 0.0;
+		float bias = 128.0;
+
+		applyFilter(filter, bias);
+	}
+
+	void applyBlur() {
+
+		// Cria o filtro
+		const int fh = 5, fw = 5;
+		float filter[fh][fw] =
+		{	
+			{1.0 / 256.0, 4.0 / 256.0, 6.0 / 256.0, 4.0 / 256.0, 1.0 / 256.0},
+			{4.0 / 256.0, 16.0 / 256.0, 24.0 / 256.0, 16.0 / 256.0, 4.0 / 256.0},
+			{6.0 / 256.0, 24.0 / 256.0, 36.0 / 256.0, 24.0 / 256.0, 6.0 / 256.0},
+			{4.0 / 256.0, 16.0 / 256.0, 24.0 / 256.0, 16.0 / 256.0, 4.0 / 256.0},
+			{1.0 / 256.0, 4.0 / 256.0, 6.0 / 256.0, 4.0 / 256.0, 1.0 / 256.0} 
+		};
+
+		applyFilter(filter,0.0);
+	}
+
+	// Filtro 5x5
+	void applyFilter(float filter[5][5], float bias) {
+
+		int fh = 5, fw = 5;
 
 		// Vetor de resultado
-		result.resize(image.size());
+		result.resize(imgHeight);
 
-		float R = 0.0, G = 0.0, B = 0.0;
+		for (int y = imgHeight - 1; y >= 0; --y) {
+			result[y].resize(imgWidth);
+			std::cerr << "\rScanlines remaining (Applying Filter): " << y << ' ' << std::flush;
+			for (int x = 0; x < imgWidth; ++x) {
 
-		// Para cada pixel da imagem
+				// RGB finais
+				float R = 0.0, G = 0.0, B = 0.0;
+				glm::vec3 pixel(0);
 
-		for (int x = 0; x < imgWidth; x++) {
-			std::cerr << "\rScanlines remaining (Applying Blur): " << imgWidth - x << ' ' << std::flush;
+				// multiplicar o filtro pelo pixel
+				for (int a = 0; a < fw; a++) {
+					for (int b = 0; b < fh; b++) {
+						int xn = x + a;
+						int yn = y + b;
+						if (xn >= 0 && yn >= 0 &&
+							xn < imgWidth && yn < imgHeight)
+							pixel = image[yn][xn];
 
-			for (int y = 0; y < imgHeight; y++) {
-
-				// converter para float
-				image[y * imgWidth + x].r /= 255.f;
-				image[y * imgWidth + x].g /= 255.f;
-				image[y * imgWidth + x].b /= 255.f;
-
-				// multiplicar o pixel pelo filtro
-				for (int filterY = 0; filterY < filterHeight; filterY++) {
-					for (int filterX = 0; filterX < filterWidth; filterX++) {
-
-						int imageX = (x - filterWidth / 2 + filterX + imgWidth) % imgWidth;
-						int imageY = (y - filterHeight / 2 + filterY + imgHeight) % imgHeight;
-
-						// Aplicar no RGB do pixel
-						R += image[imageY * imgWidth + imageX].r * filter[filterY][filterX];
-						G += image[imageY * imgWidth + imageX].g * filter[filterY][filterX];
-						B += image[imageY * imgWidth + imageX].b * filter[filterY][filterX];
+						R += pixel.r * filter[a][b];
+						G += pixel.g * filter[a][b];
+						B += pixel.b * filter[a][b];
 					}
 				}
+				result[y][x].r = R + bias;
+				result[y][x].g = G + bias;
+				result[y][x].b = B + bias;
 
-				// Truncar os valores p/ o vetor de resultado
-
-				result[y * imgWidth + x].r = int(256 * clamp(int(factor * R + bias), 0.f, .999f));
-				result[y * imgWidth + x].g = int(256 * clamp(int(factor * G + bias), 0.f, .999f));
-				result[y * imgWidth + x].b = int(256 * clamp(int(factor * B + bias), 0.f, .999f));
+				//teste (motion blur)
+				//image[y][x] = result[y][x];
+				
 			}
 		}
+
+		// Colocar o resultado no vetor de entrada
+		// caso aplique mais de um filtro
+		for (int y = imgHeight - 1; y >= 0; --y)
+			for (int x = 0; x < imgWidth; ++x) {
+				image[y][x] = result[y][x];
+			}
+
+		std::cerr << "\nDone.\n";
+
+	}
+
+	// Filtro 3x3
+	void applyFilter(float filter[3][3], float bias) {
+		int fh = 3, fw = 3;
+
+
+		// Vetor de resultado
+		result.resize(imgHeight);
+
+		for (int y = imgHeight - 1; y >= 0; --y) {
+			result[y].resize(imgWidth);
+			std::cerr << "\rScanlines remaining (Applying Filter): " << y << ' ' << std::flush;
+			for (int x = 0; x < imgWidth; ++x) {
+				// Se não existir vetor ainda
+				if (!result[y][x].r) {
+					result[y][x] = glm::vec3(0);
+				}
+				// RGB finais
+				float R = 0.0, G = 0.0, B = 0.0;
+				glm::vec3 pixel(0);
+				// multiplicar o pixel pelo filtro
+				for (int a = 0; a < fw; a++) {
+					for (int b = 0; b < fh; b++) {
+						int xn = x + a;
+						int yn = y + b;
+						if (xn >= 0 && yn >= 0 &&
+							xn < imgWidth && yn < imgHeight)
+							pixel = image[yn][xn];
+
+						R += pixel.r * filter[a][b];
+						G += pixel.g * filter[a][b];
+						B += pixel.b * filter[a][b];
+					}
+				}
+				result[y][x].r = R + bias;
+				result[y][x].g = G + bias;
+				result[y][x].b = B + bias;
+			}
+		}
+
+		// Colocar o resultado na imagem de entrada
+		// caso aplique mais de um filtro
+		for (int y = imgHeight - 1; y >= 0; --y)
+			for (int x = 0; x < imgWidth; ++x) {
+				image[y][x] = result[y][x];
+			}
 		std::cerr << "\nDone.\n";
 	}
+
 
 	void saveImg(std::string fileToSave) {
 		// cria arquivo de saída
@@ -78,13 +152,13 @@ public:
 
 			output << "P3\n" << imgWidth << ' ' << imgHeight << "\n255\n";
 
-			for (int y = 0; y < imgHeight; y++)
-				for (int x = 0; x < imgWidth; x++) {
-					output << result[y * imgWidth + x].r << ' ' << result[y * imgWidth + x].g << ' ' << result[y * imgWidth + x].b << '\n';
+			for (int j = imgHeight - 1; j >= 0; --j) {
+				for (int i = 0; i < imgWidth; ++i) {
+					output << result[j][i].r << ' ' << result[j][i].g << ' ' << result[j][i].b << '\n';
+
 				}
-			/*for (int i = 0; i < imgWidth * imgHeight; i++) {
-				output << result[i].r << ' ' << result[i].g << ' ' << result[i].b << '\n';
-			}*/
+			}
+
 
 			std::cerr << "\nDone.\n";
 
@@ -108,13 +182,17 @@ public:
 			input >> imgWidth >> imgHeight;
 			input >> data; // 255
 
-			image.resize(imgWidth * imgHeight);
+			image.resize(imgHeight);
+			
+			for (int j = imgHeight - 1; j >= 0; --j) {
+				image[j].resize(imgWidth);
 
-
-			for (int i = 0; i < imgWidth * imgHeight; i++) {
-				input >> pixel.r >> pixel.g >> pixel.b;
-				image[i] = pixel;
+				for (int i = 0; i < imgWidth; ++i) {
+					input >> pixel.r >> pixel.g >> pixel.b;
+					image[j][i] = pixel;
+				}
 			}
+
 			std::cerr << "\nDone.\n";
 
 			input.close();
@@ -124,8 +202,8 @@ public:
 private:
 	std::ifstream input;
 	std::ofstream output;
-	std::vector<glm::vec3> image;
-	std::vector<glm::vec3> result;
+	std::vector<std::vector<glm::vec3>> image;
+	std::vector<std::vector<glm::vec3>> result;
 	int imgWidth, imgHeight;
 
 };
