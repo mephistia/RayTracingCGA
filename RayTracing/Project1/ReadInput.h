@@ -96,8 +96,14 @@ public:
 						inputFile >> data;
 						fuzz = (float)atof(data);
 						std::cerr << " " << fuzz << "\n";
-						// adicionar Metal ao mundo
-						world.add(make_shared<Sphere>(position, r, make_shared<Metal>(albedo, fuzz)));
+						// Se for Ray Casting, ignora e faz Lambert
+						if (!rayTracing) {
+							world.add(make_shared<Sphere>(position, r, make_shared<Lambertian>(albedo)));
+						}
+						else {
+							// adicionar Metal ao mundo
+							world.add(make_shared<Sphere>(position, r, make_shared<Metal>(albedo, fuzz)));
+						}
 						std::cerr << "Sphere " << i << " done!\n";
 
 					}
@@ -108,7 +114,8 @@ public:
 					}
 				}
 				else {
-					inputFile >> data;
+					// Se for vidro (dielétrico)
+					inputFile >> data; // Lê índice de refração
 					ref = (float)atof(data);
 					std::cerr << " " << ref << "\n";
 					// se for Ray Casting, ignora o D
